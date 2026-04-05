@@ -16,6 +16,12 @@ dist/
 .vscode/*
 !.vscode/extensions.json
 
+# Internal / working docs (keep locally; do not publish)
+docs/
+/文生图*.md
+/提示词.txt
+/提示词与功能对应表.md
+
 # Logs
 *.log
 npm-debug.log*
