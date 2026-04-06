@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Produces release/chayuan-wps-addon_<version>_all.deb (run on Debian/Ubuntu; requires dpkg-deb).
+# Produces release/ChayuanWPS-<version>-linux-<arch>.deb（run on Debian/Ubuntu; requires dpkg-deb）。
+# arch 与构建机 uname -m 一致（x64/arm64），便于分平台 Release；包内仍为 Architecture: all（纯 JS 资源）。
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -8,6 +9,13 @@ if ! command -v dpkg-deb >/dev/null 2>&1; then
 	echo "dpkg-deb not found. Install with: sudo apt install dpkg-dev" >&2
 	exit 1
 fi
+
+ARCH_RAW="$(uname -m)"
+case "$ARCH_RAW" in
+	arm64|aarch64) ARCH_ID="arm64" ;;
+	x86_64|amd64) ARCH_ID="x64" ;;
+	*) ARCH_ID="$ARCH_RAW" ;;
+esac
 
 npm run build:wps-all
 
@@ -42,7 +50,8 @@ sed "s|__INSTALL_ROOT__|/opt/chayuan-wps-addon|g" \
 	"$ROOT/scripts/linux/postinst.template.sh" >"$DEB_ROOT/DEBIAN/postinst"
 chmod 0755 "$DEB_ROOT/DEBIAN/postinst"
 
-OUT_DEB="$ROOT/release/chayuan-wps-addon_${VERSION}_all.deb"
+OUT_DEB="$ROOT/release/ChayuanWPS-${VERSION}-linux-${ARCH_ID}.deb"
 dpkg-deb --build "$DEB_ROOT" "$OUT_DEB"
 rm -rf "$DEB_ROOT"
-echo "Built: $OUT_DEB (sudo dpkg -i ... ; then restart WPS)"
+node "$ROOT/scripts/write-release-manifest.mjs" "release/ChayuanWPS-${VERSION}-linux-${ARCH_ID}.deb"
+echo "Built: $OUT_DEB (linux ${ARCH_ID}; sudo dpkg -i ... ; then restart WPS)"

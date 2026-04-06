@@ -20,7 +20,11 @@
 		"build:wps-all": "node scripts/build-wps-addon.mjs",
 		"build:wps-exe": "node scripts/run-wpsjs-exe.mjs",
 		"build:wps-pkg-macos": "bash scripts/build-macos-pkg.sh",
-		"build:wps-deb": "bash scripts/build-linux-deb.sh"
+		"build:wps-deb": "bash scripts/build-linux-deb.sh",
+		"release:platform": "node scripts/show-release-platform.mjs",
+		"release:upload": "node scripts/gh-release-upload.mjs",
+		"release:upload:here": "node scripts/gh-release-upload.mjs --current-only",
+		"release:upload:dry": "node scripts/gh-release-upload.mjs --dry-run"
 	},
 	"dependencies": {
 		"@iconify-json/fa6-solid": "^1.2.4",
