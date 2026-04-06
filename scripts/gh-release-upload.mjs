@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
  * 将 release/ 下当前版本的分平台产物上传到 GitHub Release（需已安装 gh 并已登录）。
- * 匹配: ChayuanWPS-<version>-macos-*.pkg | linux-*.deb | windows-*.exe
- * 以及旧版 ChayuanWPS-<version>-macos.pkg（无架构后缀）
+ * 匹配: <package.json name>-<version>-<os>-<arch>.{pkg,deb,exe,7z}
+ * 以及历史前缀 ChayuanWPS-<version>-...（旧文件名仍会上传）
  *
  * 用法:
  *   node scripts/gh-release-upload.mjs              # tag=v<package.json version>
@@ -18,9 +18,12 @@ import { currentReleaseTriple } from './lib/release-platform.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
-function readVersion() {
+function readPkgMeta() {
 	const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
-	return String(pkg.version || '0.0.0')
+	return {
+		version: String(pkg.version || '0.0.0'),
+		name: String(pkg.name || 'chayuan'),
+	}
 }
 
 function parseArgs(argv) {
@@ -48,19 +51,20 @@ function ghExists() {
 	}
 }
 
-function listReleaseAssets(version, currentOnly) {
+function listReleaseAssets(version, pkgName, currentOnly) {
 	const releaseDir = path.join(root, 'release')
 	if (!fs.existsSync(releaseDir)) {
 		console.error('release/ directory missing.')
 		process.exit(1)
 	}
 	const names = fs.readdirSync(releaseDir)
-	const prefix = `ChayuanWPS-${version}-`
-	const exts = new Set(['.pkg', '.deb', '.exe'])
+	const prefixes = [`${pkgName}-${version}-`, `ChayuanWPS-${version}-`]
+	const exts = new Set(['.pkg', '.deb', '.exe', '.7z'])
 	const { suffix: needSuffix } = currentOnly ? currentReleaseTriple() : { suffix: '' }
 	const files = []
 	for (const name of names) {
-		if (!name.startsWith(prefix)) continue
+		const prefix = prefixes.find((p) => name.startsWith(p))
+		if (!prefix) continue
 		const ext = path.extname(name).toLowerCase()
 		if (!exts.has(ext)) continue
 		const mid = name.slice(prefix.length, -ext.length)
@@ -71,18 +75,18 @@ function listReleaseAssets(version, currentOnly) {
 	return files.sort()
 }
 
-const version = readVersion()
+const { version, name: pkgName } = readPkgMeta()
 const { tag: tagArg, dryRun, currentOnly } = parseArgs(process.argv)
 const tag = tagArg || `v${version}`
 
-const assets = listReleaseAssets(version, currentOnly)
+const assets = listReleaseAssets(version, pkgName, currentOnly)
 if (assets.length === 0) {
 	const triple = currentReleaseTriple()
 	const hint = currentOnly
-		? ` (--current-only: 本机为 ${triple.suffix}，需存在 ChayuanWPS-${version}-${triple.suffix}.*)`
+		? ` (--current-only: 本机为 ${triple.suffix}，需存在 ${pkgName}-${version}-${triple.suffix}.*)`
 		: ''
 	console.error(
-		`No release assets found under release/ for version ${version} (expected ChayuanWPS-${version}-*.{pkg,deb,exe}).${hint}`,
+		`No release assets found under release/ for version ${version} (expected ${pkgName}-${version}-<platform>-<arch>.{pkg,deb,exe,7z}).${hint}`,
 	)
 	process.exit(1)
 }

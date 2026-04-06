@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Double-clickable installer: produces release/ChayuanWPS-<version>-macos-<arch>.pkg (run on macOS).
-# arch: arm64 (Apple Silicon) or x64 (Intel)，与当前构建机架构一致。
+# Double-clickable installer: release/<package.json name>-<version>-macos-<arch>.pkg（仅能在 macOS 上构建）。
+# arch: arm64 (Apple Silicon) or x64 (Intel)，与当前构建机 uname -m 一致。
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -20,6 +20,7 @@ esac
 npm run build:wps-all
 
 VERSION="$(node -p "require('./package.json').version")"
+NAME="$(node -p "require('./package.json').name")"
 STAGING="$ROOT/release/install-staging"
 if [[ ! -f "$STAGING/install.json" ]]; then
 	echo "Missing release/install-staging (run build:wps-all)." >&2
@@ -38,7 +39,7 @@ sed "s|__INSTALL_ROOT__|/Library/Application Support/ChayuanWPS|g" \
 	"$ROOT/scripts/macos/postinstall.template.sh" >"$SCRIPTS_DIR/postinstall"
 chmod +x "$SCRIPTS_DIR/postinstall"
 
-OUT_PKG="$ROOT/release/ChayuanWPS-${VERSION}-macos-${ARCH_ID}.pkg"
+OUT_PKG="$ROOT/release/${NAME}-${VERSION}-macos-${ARCH_ID}.pkg"
 pkgbuild \
 	--root "$PKG_ROOT" \
 	--scripts "$SCRIPTS_DIR" \
@@ -48,5 +49,5 @@ pkgbuild \
 	"$OUT_PKG"
 
 rm -rf "$PKG_ROOT" "$SCRIPTS_DIR"
-node "$ROOT/scripts/write-release-manifest.mjs" "release/ChayuanWPS-${VERSION}-macos-${ARCH_ID}.pkg"
+node "$ROOT/scripts/write-release-manifest.mjs" "release/${NAME}-${VERSION}-macos-${ARCH_ID}.pkg"
 echo "Built: $OUT_PKG (macOS ${ARCH_ID}; double-click to install; may need Right-click → Open if unsigned)"

@@ -7,6 +7,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { execSync } from 'node:child_process'
+import { currentReleaseTriple, releaseArtifactFilename } from './lib/release-platform.mjs'
 
 const require = createRequire(import.meta.url)
 const fsEx = require('fs-extra')
@@ -128,12 +129,12 @@ function writeInstallReadme(pkg, releaseDir) {
 		'将 wps-addon-build/ 目录内文件部署到 HTTPS 静态服务器，并在 WPS 中配置对应加载项 URL。',
 		'',
 		'【离线部署 · 无需手抄文件】',
-		`压缩包 ${name}.7z 内已含 publish.xml 与 ${verStamp} 文件夹；安装包会自动拷入 WPS jsaddons。`,
+		`压缩包 ${name}-<版本>-<平台>-<架构>.7z（与构建机一致）内已含 publish.xml 与 ${verStamp} 文件夹；安装包会自动拷入 WPS jsaddons。`,
 		'',
-		'一键安装（文件名含平台与架构，如 ChayuanWPS-1.0.1-macos-arm64.pkg）：',
-		'- Windows：npm run build:wps-exe → release/ChayuanWPS-<ver>-windows-<x64|arm64>.exe。',
-		'- macOS：bash scripts/build-macos-pkg.sh → release/ChayuanWPS-<ver>-macos-<arm64|x64>.pkg。',
-		'- Linux：bash scripts/build-linux-deb.sh → release/ChayuanWPS-<ver>-linux-<arm64|x64>.deb，sudo dpkg -i。',
+		`一键安装（文件名：${name}-<版本>-<平台>-<架构>.<后缀>，例如 ${name}-1.0.1-macos-arm64.pkg）：`,
+		`- Windows：npm run build:wps-exe → release/${name}-<ver>-windows-<x64|arm64>.exe。`,
+		`- macOS：npm run build:wps-pkg-macos → release/${name}-<ver>-macos-<arm64|x64>.pkg。`,
+		`- Linux：npm run build:wps-deb → release/${name}-<ver>-linux-<arm64|x64>.deb，sudo dpkg -i。`,
 		'',
 		'常见 jsaddons 位置（安装脚本已覆盖；若手动排查可参考）：',
 		'- Windows：%AppData%\\Kingsoft\\wps\\jsaddons',
@@ -174,11 +175,13 @@ async function main() {
 	if (offline) {
 		const staging = writeInstallStaging(distDir, releaseRoot, pkg)
 		console.log(`Install staging (for .pkg/.deb/.7z): ${staging}`)
-		const release7z = path.join(releaseRoot, `${name}.7z`)
+		const { platform, arch } = currentReleaseTriple()
+		const z7Name = releaseArtifactFilename(name, version, platform, arch, '.7z')
+		const release7z = path.join(releaseRoot, z7Name)
 		await buildOffline7z({ name, version, staging, out7z: release7z })
 		console.log(`Offline 7z: ${release7z}`)
 		fsEx.ensureDirSync(buildRoot)
-		const build7z = path.join(buildRoot, `${name}.7z`)
+		const build7z = path.join(buildRoot, z7Name)
 		fsEx.copySync(release7z, build7z)
 		console.log(`Also copied to: ${build7z}`)
 	}

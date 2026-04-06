@@ -37,6 +37,16 @@ export function currentReleaseTriple() {
 	return { platform: family, arch, suffix: `${family}-${arch}` }
 }
 
+/**
+ * 安装包文件名：{name}-{version}-{platform}-{arch}{ext}
+ * platform/arch 与 {@link currentReleaseTriple} 一致（由当前构建机决定）。
+ * @param {string} ext 含点，如 ".deb"
+ */
+export function releaseArtifactFilename(pkgName, version, platform, arch, ext) {
+	const dot = ext.startsWith('.') ? ext : `.${ext}`
+	return `${pkgName}-${version}-${platform}-${arch}${dot}`
+}
+
 const INSTALL_HINTS = {
 	'macos-arm64': 'macOS Apple Silicon (arm64)：双击 .pkg；未签名时可能需右键 → 打开。',
 	'macos-x64': 'macOS Intel (x64)：双击 .pkg；未签名时可能需右键 → 打开。',

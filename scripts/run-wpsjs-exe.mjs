@@ -2,13 +2,13 @@
 /**
  * Windows only: wpsjs embeds 7-Zip SFX + copy.bat → %AppData%\Kingsoft\wps\jsaddons
  * Requires package.json "name" to be ASCII-only.
- * 产物复制为 release/ChayuanWPS-<version>-windows-<arch>.exe（x64 / arm64）。
+ * 产物复制为 release/<package name>-<version>-windows-<arch>.exe（x64 / arm64）。
  */
 import { execSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { normalizeNodeArch } from './lib/release-platform.mjs'
+import { normalizeNodeArch, releaseArtifactFilename } from './lib/release-platform.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 if (process.platform !== 'win32') {
@@ -30,7 +30,10 @@ if (!fs.existsSync(builtExe)) {
 
 const releaseDir = path.join(root, 'release')
 fs.mkdirSync(releaseDir, { recursive: true })
-const outExe = path.join(releaseDir, `ChayuanWPS-${version}-windows-${arch}.exe`)
+const outExe = path.join(
+	releaseDir,
+	releaseArtifactFilename(name, version, 'windows', arch, '.exe'),
+)
 fs.copyFileSync(builtExe, outExe)
 console.log(`Copied to ${path.relative(root, outExe)}`)
 
